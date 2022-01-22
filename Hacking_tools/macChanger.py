@@ -25,7 +25,7 @@ def getCurrentMac(interface):
     if macResult:
         return macResult.group(0)
     else: 
-        print("No se pudo leer direcciòn MAC")'''
+        print("No se pudo leer direcciòn MAC") '''
 
 options = getArguments()
 changeMac(options.interface, options.newMac)

