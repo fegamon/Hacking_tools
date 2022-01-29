@@ -1,0 +1,25 @@
+--LIBRERÍAS NECESARIAS PARA PYTHON--
+    -PyPi (apt-get install pip)
+    -Scapy (pipinstall scapy)
+    -Netfilterqueue(
+        apt-get install build-essential python-dev libnetfilter-queue-dev
+        Desde PyPi: pip install NetfilterQueue
+    )
+
+--RECOMENDABLE INSTALAR "TERMINATOR"--
+*Terminator es un programa que nos permite ejecutar varias consolas a la vez
+*La instalamos ejecutando el comando: apt-get install terminator
+
+--ARP SPOOF--
+*Para realizar un envenenamiento de ARP (ARP Spoof) se debe concer el Gateway del Router (sudo route -n) y la dirección IP de la víctima
+*Para obtener las direcciones IP de los dispositivos que han respondido (víctimas) ejecutamos el networkScanner.py y le pasamos como parámetro el Gateway + el prefijo de red (por ejemplo 192.198.1.1/24)
+*Antes de realizar el envenenamiento ARP debemos entrar en modo Router para que la víctima reciba internet:
+    -Para poder hacer esto es necesario entrar en modo root(sudo su)
+    -Ejecutamos el comando: echo 1 > /proc/sys/net/ipv4/ip_forward
+    -Con esto nuestra máquina Linux ha entrado en modo Router y podemos proveer internet a nuestra víctima para realiza el ataque
+*Ahora sí podemos hacer el envenenamiento ARP. Ejecutamos el arpSpoofer.py y le pasamos como parámetro el ip la víctima(--dstip) y el Gateway(--gtwip)
+
+--PACKET SNIFFER--
+*Con esto podemos leer los paquetes de la víctima, especíicamente los paquetes de login, para ver el sitio web, usuario y contraseña posible. Se ejecuta con el packetSniffer.py
+*NOTA: Es importante que el archivo arpSpoofer.py esté ejecutándose, ya que si no se hace, sólo veremos los paquetes de navegación de nuestra computadora
+*Usando Terminator podemos abrir dos consolas para ejecutar en una el arpSpoofer.py mientras en la otra el packetSniffer.py
