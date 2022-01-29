@@ -1,8 +1,8 @@
 --LIBRERÍAS NECESARIAS PARA PYTHON--
     -PyPi (apt-get install pip)
-    -Scapy (pipinstall scapy)
+    -Scapy (pip install scapy)
     -Netfilterqueue(
-        apt-get install build-essential python-dev libnetfilter-queue-dev
+        apt-get install build-essential python3-dev libnetfilter-queue-dev
         Desde PyPi: pip install NetfilterQueue
     )
 
@@ -10,9 +10,13 @@
 *Terminator es un programa que nos permite ejecutar varias consolas a la vez
 *La instalamos ejecutando el comando: apt-get install terminator
 
+--MAC Changer--
+*Ejecutamos macChanger.py y pasamos como argumento la interface a la que queremos cambiar la dirección MAC (--interface), por ejemplo 'eth0' y luego escribimos la nueva dirección MAC (--mac)
+*NOTA: Para poder ver el nombre de las interfaces y su respectiva MAC ejecutamos desde el terminal: ifconfig
+
 --ARP SPOOF--
 *Para realizar un envenenamiento de ARP (ARP Spoof) se debe concer el Gateway del Router (sudo route -n) y la dirección IP de la víctima
-*Para obtener las direcciones IP de los dispositivos que han respondido (víctimas) ejecutamos el networkScanner.py y le pasamos como parámetro el Gateway + el prefijo de red (por ejemplo 192.198.1.1/24)
+*Para obtener las direcciones IP de los dispositivos que han respondido (víctimas) ejecutamos el networkScanner.py y le pasamos como parámetro el Gateway + el prefijo de red (por ejemplo 192.198.1.1/24) (--ip)
 *Antes de realizar el envenenamiento ARP debemos entrar en modo Router para que la víctima reciba internet:
     -Para poder hacer esto es necesario entrar en modo root(sudo su)
     -Ejecutamos el comando: echo 1 > /proc/sys/net/ipv4/ip_forward
@@ -23,3 +27,16 @@
 *Con esto podemos leer los paquetes de la víctima, especíicamente los paquetes de login, para ver el sitio web, usuario y contraseña posible. Se ejecuta con el packetSniffer.py
 *NOTA: Es importante que el archivo arpSpoofer.py esté ejecutándose, ya que si no se hace, sólo veremos los paquetes de navegación de nuestra computadora
 *Usando Terminator podemos abrir dos consolas para ejecutar en una el arpSpoofer.py mientras en la otra el packetSniffer.py
+
+--DNS Spoof--
+*Es recomendable hacer todo en modo root
+*Antes de ejecutarlo, debemos activar las tablas IP, para ello desde el terminal ejecutamos:
+    -Para ver las tablas ip de nuestro dispositivo:
+        iptables -i OUTPUT -j NFQUEUE --queue-num 0
+        iptables -i INPUT -j NFQUEUE --queue-num 0
+    -Para ver las tablas ip de un dispositivo remoto (ARP Spoof):
+        iptables --flush
+        iptables -i FORWARD -j NFQUEUE --queue-num 0
+*Ahora para redireccionar una solicitud remota, primero ejecutamos el arpSpoof.py
+*Ya que se está ejecutado elenvenenamiento ARP, ejecutamos dnsSpoof.py y le pasamos como argumentos el nombre del dominio que queremos redireccionar (--domain) y la dirección IP del sitio al que queremos redirigir (--redirectip)
+*NOTA: Para obtener la dirección ip de un dominio podemos ejecutar desde el teminal: ping -c [nombre_del_dominio]
