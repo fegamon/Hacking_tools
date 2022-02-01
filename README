@@ -32,11 +32,11 @@
 *Es recomendable hacer todo en modo root
 *Antes de ejecutarlo, debemos activar las tablas IP, para ello desde el terminal ejecutamos:
     -Para ver las tablas ip de nuestro dispositivo:
-        iptables -i OUTPUT -j NFQUEUE --queue-num 0
-        iptables -i INPUT -j NFQUEUE --queue-num 0
+        iptables -I OUTPUT -j NFQUEUE --queue-num 0
+        iptables -I INPUT -j NFQUEUE --queue-num 0
     -Para ver las tablas ip de un dispositivo remoto (ARP Spoof):
         iptables --flush
-        iptables -i FORWARD -j NFQUEUE --queue-num 0
+        iptables -I FORWARD -j NFQUEUE --queue-num 0
 *Ahora para redireccionar una solicitud remota, primero ejecutamos el arpSpoof.py
 *Ya que se está ejecutado elenvenenamiento ARP, ejecutamos dnsSpoof.py y le pasamos como argumentos el nombre del dominio que queremos redireccionar (--domain) y la dirección IP del sitio al que queremos redirigir (--redirectip)
 *NOTA: Para obtener la dirección ip de un dominio podemos ejecutar desde el teminal: ping -c [nombre_del_dominio]
