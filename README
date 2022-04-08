@@ -44,3 +44,12 @@
 *Ahora para redireccionar una solicitud remota, primero ejecutamos el arpSpoof.py
 *Ya que se está ejecutado elenvenenamiento ARP, ejecutamos dnsSpoof.py y le pasamos como argumentos el nombre del dominio que queremos redireccionar (--domain) y la dirección IP del sitio al que queremos redirigir (--redirectip)
 *NOTA: Para obtener la dirección ip de un dominio podemos ejecutar desde el teminal: ping -c [nombre_del_dominio]
+
+--BACKDOOR--
+*TCP Server:
+    -Establece conexión con un cliente que haya solicitado una conexión (backdoor) mediante TCP inverso. Esto nos permitirá navegar por el dispositivo del cliente mediante la terminal, cuyos comandos van a depender del sistema operativo del dispositivo
+    -Se debe inicializar pasando como parámetros los valores de la dirección ip (--ip) que hará de servidor y un número de puerto (--port) donde se realizará la conexión.
+    -Comandos:
+        1) salir: Termina la conexión cliente-servidor
+        2) down: Descarga un archivo del cliente hacia el dispositivo servidor. Se debe especificar una ruta de descarga, la estructura debe ser << down ruta_de_destino nombre_de_archivo >>
+        3) up: Sube un archivo desde el servidor al dispositivo cliente. La estructura debe ser << up ruta_de_destino nombre_de_archivo >>. En nombre_de_archivo se puede especificar la ruta (/ruta/ruta/nombre_de_archivo)
